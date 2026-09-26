@@ -1,4 +1,4 @@
-import React,{useState} from 'react';import{createRoot}from'react-dom/client';import{Bike,Package,ShoppingBag,MapPin,Clock,ShieldCheck,ChevronRight,MessageCircle,Menu,X,ArrowRight}from'lucide-react';import'./styles.css';
+import React,{useState} from 'react';import{createRoot}from'react-dom/client';import{Bike,Package,ShoppingBag,MapPin,Clock,ShieldCheck,ChevronRight,MessageCircle,Menu,X,ArrowRight,Check,CalendarDays,Plus,User,Phone}from'lucide-react';import'./styles.css';
 
 type Module='rent'|'send'|'fetch'|null;\ntype BikeType='City Bike'|'Electric Bike'|'Scooter'|'Dual-Sport'; type Extra='Helmet'|'Phone Mount'|'Child Seat'|'Delivery/Pickup';
 
