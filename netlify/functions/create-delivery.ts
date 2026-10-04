@@ -22,7 +22,7 @@ export const handler: Handler = async event => {
       packageDescription:String(body.packageDescription || '').trim(),
       senderName:String(body.senderName).trim(), senderPhone:String(body.senderPhone).trim(),
       receiverName:String(body.receiverName).trim(), receiverPhone:String(body.receiverPhone).trim(),
-      deliveryNotes:String(body.deliveryNotes || '').trim(), pin:makePin(), createdAt:now, updatedAt:now
+      deliveryNotes:String(body.deliveryNotes || '').trim(), deliveryType:(body.deliveryType||'standard') as any, charge:body.charge==null?null:Number(body.charge), pin:makePin(), createdAt:now, updatedAt:now
     };
     await store.setJSON(ref, record);
     return json(201, { ok:true, delivery:record });
