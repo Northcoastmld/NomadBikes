@@ -1,13 +1,14 @@
 {
   "name": "Ahmed Nomad Bikes",
   "short_name": "Nomad",
-  "description": "Coastal bike rentals, package delivery and local errands by Ahmed Nomad Bikes.",
+  "description": "Ahmed Nomad Bikes — coastal bike rentals, package delivery and local errands.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#111111",
+  "background_color": "#f5f2eb",
   "theme_color": "#111111",
   "orientation": "portrait-primary",
+  "categories": ["travel", "transportation", "business"],
   "icons": [
     {"src": "/nomad-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
   ]
