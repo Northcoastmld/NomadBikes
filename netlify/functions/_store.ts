@@ -4,7 +4,7 @@ export type DeliveryStatus = 'ORDER RECEIVED' | 'RIDER ASSIGNED' | 'COLLECTED' |
 export type DeliveryRecord = {
   ref: string; status: DeliveryStatus; pickup: string; dropoff: string;
   packageDescription: string; senderName: string; senderPhone: string;
-  receiverName: string; receiverPhone: string; deliveryNotes: string;
+  receiverName: string; receiverPhone: string; deliveryNotes: string; deliveryType: 'standard'|'express'|'scheduled'; charge: number|null;
   pin: string; createdAt: string; updatedAt: string;
 };
 export const deliveryStore = () => getStore({ name: 'nomad-deliveries', consistency: 'strong' });
