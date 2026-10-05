@@ -1,19 +1,4 @@
-import type { Handler } from '@netlify/functions';
-import { deliveryStore, type DeliveryStatus } from './_store';
-const json=(statusCode:number,body:unknown)=>({statusCode,headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(body)});
+import type { Handler } from '@netlify/functions';import {requireRole} from './_auth';import {deliveryStore,type DeliveryStatus} from './_store';
+const j=(s:number,b:unknown)=>({statusCode:s,headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(b)});
 const statuses:DeliveryStatus[]=['ORDER RECEIVED','RIDER ASSIGNED','COLLECTED','OUT FOR DELIVERY','DELIVERED'];
-export const handler:Handler=async event=>{
-  if(event.httpMethod!=='POST') return json(405,{error:'Method not allowed'});
-  try{
-    const body=JSON.parse(event.body||'{}');
-    const ref=String(body.ref||'').trim().toUpperCase();
-    const status=body.status as DeliveryStatus;
-    if(!/^NOMAD-[A-Z0-9]{6}$/.test(ref)||!statuses.includes(status)) return json(400,{error:'Invalid reference or status'});
-    const store=deliveryStore();
-    const current=await store.get(ref,{type:'json'}) as any;
-    if(!current) return json(404,{error:'Delivery reference not found'});
-    const updated={...current,status,updatedAt:new Date().toISOString()};
-    await store.setJSON(ref,updated);
-    return json(200,{ok:true,delivery:updated});
-  }catch{return json(500,{error:'Unable to update delivery'});}
-};
+export const handler:Handler=async e=>{if(e.httpMethod!=='POST')return j(405,{error:'Method not allowed'});try{const session=await requireRole(e,['ADMIN','RIDER']);if(!session)return j(403,{error:'Authorised staff access only'});const b=JSON.parse(e.body||'{}'),ref=String(b.ref||'').trim().toUpperCase(),status=b.status as DeliveryStatus;if(!/^NOMAD-[A-Z0-9]{6}$/.test(ref)||!statuses.includes(status))return j(400,{error:'Invalid reference or status'});const s=deliveryStore(),d=await s.get(ref,{type:'json'}) as any;if(!d)return j(404,{error:'Delivery reference not found'});if(session.role==='RIDER'&&d.assignedRiderId!==session.user.id)return j(403,{error:'This delivery is not assigned to you'});const u={...d,status,updatedAt:new Date().toISOString()};await s.setJSON(ref,u);return j(200,{ok:true,delivery:u})}catch{return j(500,{error:'Unable to update delivery'})}};
