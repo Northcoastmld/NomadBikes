@@ -1,24 +1,6 @@
 import type { Handler } from '@netlify/functions';
-import { deliveryStore, type DeliveryStatus } from './_store';
-
 const json=(statusCode:number,body:unknown)=>({statusCode,headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(body)});
-const statuses:DeliveryStatus[]=['ORDER RECEIVED','RIDER ASSIGNED','COLLECTED','OUT FOR DELIVERY','DELIVERED'];
-
 export const handler:Handler=async event=>{
-  if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed'});
-  try{
-    const body=JSON.parse(event.body||'{}');
-    const ref=String(body.ref||'').trim().toUpperCase();
-    const status=body.status as DeliveryStatus;
-    const secret=String(event.headers['x-nomad-admin-key']||'');
-    const expected=String(process.env.NOMAD_ADMIN_KEY||'');
-    if(!expected||secret!==expected)return json(401,{error:'Unauthorized'});
-    if(!/^NOMAD-[A-Z0-9]{6}$/.test(ref)||!statuses.includes(status))return json(400,{error:'Invalid reference or status'});
-    const store=deliveryStore();
-    const current=await store.get(ref,{type:'json'}) as any;
-    if(!current)return json(404,{error:'Delivery reference not found'});
-    const updated={...current,status,updatedAt:new Date().toISOString()};
-    await store.setJSON(ref,updated);
-    return json(200,{ok:true,delivery:updated});
-  }catch{return json(500,{error:'Unable to update delivery'});}
+ if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed'});
+ return json(410,{error:'Legacy delivery update endpoint disabled. Use authenticated Nomad admin or rider access.'});
 };
