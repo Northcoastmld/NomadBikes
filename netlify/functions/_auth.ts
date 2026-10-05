@@ -1,0 +1,17 @@
+import { getStore } from '@netlify/blobs';
+import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+
+export type Role = 'CUSTOMER' | 'RIDER' | 'ADMIN';
+export type User = { id:string; role:Role; name:string; phone:string; email:string; passwordHash:string; approved:boolean; online?:boolean; createdAt:string; updatedAt:string };
+export type Session = { token:string; userId:string; role:Role; expiresAt:string };
+const users=()=>getStore({name:'nomad-users',consistency:'strong'});
+const sessions=()=>getStore({name:'nomad-sessions',consistency:'strong'});
+const hash=(password:string,salt?:string)=>{const s=salt||randomBytes(16).toString('hex');return `${s}:${scryptSync(password,s,64).toString('hex')}`};
+const verify=(password:string,stored:string)=>{const [salt,digest]=stored.split(':');if(!salt||!digest)return false;const a=Buffer.from(digest,'hex');const b=scryptSync(password,salt,64);return a.length===b.length&&timingSafeEqual(a,b)};
+export const normalizePhone=(v:string)=>v.replace(/\s+/g,'').trim();
+export async function findUser(login:string){const key=login.toLowerCase().trim();const store=users();const id=key.startsWith('user_')?key:'';if(id){return await store.get(id,{type:'json'}) as User|null}for(const prefix of ['email:','phone:']){const u=await store.get(prefix+key,{type:'json'}) as any;if(u)return u as User}return null}
+export async function registerUser(input:{name:string;phone:string;email?:string;password:string;role?:Role}){const name=input.name.trim(),phone=normalizePhone(input.phone),email=(input.email||'').trim().toLowerCase(),role=input.role==='RIDER'?'RIDER':'CUSTOMER';if(!name||!phone||input.password.length<6)throw new Error('Name, phone and a password of at least 6 characters are required');const store=users();if(await store.get('phone:'+phone))throw new Error('Phone number already registered');if(email&&await store.get('email:'+email))throw new Error('Email already registered');const id='user_'+randomBytes(9).toString('hex');const now=new Date().toISOString();const user:User={id,role,name,phone,email,passwordHash:hash(input.password),approved:role==='CUSTOMER',online:false,createdAt:now,updatedAt:now};await store.setJSON(id,user);await store.setJSON('phone:'+phone,user);if(email)await store.setJSON('email:'+email,user);return user}
+export async function authenticate(login:string,password:string){const user=await findUser(login);if(!user||!verify(password,user.passwordHash))throw new Error('Invalid login details');if(user.role==='RIDER'&&!user.approved)throw new Error('Rider account is awaiting Nomad approval');const token=randomBytes(32).toString('hex');const session:Session={token,userId:user.id,role:user.role,expiresAt:new Date(Date.now()+1000*60*60*24*30).toISOString()};await sessions().setJSON(token,session);return {token,user}}
+export async function sessionFrom(event:any){const raw=String(event.headers?.authorization||event.headers?.Authorization||'');const token=raw.replace(/^Bearer\s+/i,'').trim();if(!token)return null;const s=await sessions().get(token,{type:'json'}) as Session|null;if(!s||new Date(s.expiresAt)<new Date()){if(s)await sessions().delete(token);return null}const user=await users().get(s.userId,{type:'json'}) as User|null;return user?{...s,user}:null}
+export async function requireRole(event:any,roles:Role[]){const s=await sessionFrom(event);if(!s||!roles.includes(s.role))return null;return s}
+export const userStore=users; export const sessionStore=sessions;
