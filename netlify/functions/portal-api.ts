@@ -4,7 +4,7 @@ import { deliveryStore } from './_store';
 const json=(statusCode:number,body:unknown)=>({statusCode,headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(body)});
 const safe=(u:User)=>{const {passwordHash,...rest}=u;return rest};
 export const handler:Handler=async event=>{try{const body=JSON.parse(event.body||'{}');const action=String(body.action||'');
- if(event.httpMethod==='POST'&&action==='register'){const u=await registerUser(body);const auth=await authenticate(body.phone,body.password);return json(201,{ok:true,user:safe(u),token:auth.token});}
+ if(event.httpMethod==='POST'&&action==='register'){const requestedRole=body.role==='RIDER'?'RIDER':'CUSTOMER';const u=await registerUser({...body,role:requestedRole});const auth=await authenticate(body.phone,body.password);return json(201,{ok:true,user:safe(u),token:auth.token});}
  if(event.httpMethod==='POST'&&action==='login'){const a=await authenticate(String(body.login||''),String(body.password||''));return json(200,{ok:true,user:safe(a.user),token:a.token});}
  const session=await sessionFrom(event);if(!session)return json(401,{error:'Please sign in'});
  if(event.httpMethod==='GET'&&action==='me')return json(200,{ok:true,user:safe(session.user)});
